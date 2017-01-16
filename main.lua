@@ -28,23 +28,25 @@ local function bitand(a, b)
 end
 
 function mod:init()
-  if Game():GetFrameCount() == 1 then
-    Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, ol_lopper_id, Vector(300, 400), Vector(0, 0), nil)
-  end
 end
 
 function mod:cacheUpdate(player, cacheFlag)
-  --player = Isaac.GetPlayer(0)
+  player = Isaac.GetPlayer(0)
+  if player:HasCollectible(ol_lopper_id) and cacheFlag == CacheFlag.CACHE_DAMAGE then
+    player.Damage = player.Damage + 1
+  end
 end
 
 function mod:update()
-  --todo: move things here
+  if Game():GetFrameCount() == 1 then
+    Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, ol_lopper_id, Vector(200, 300), Vector(0, 0), nil)
+  end
 end
 
 function mod:check_crit(entity, damage, damageflag, damage_source, damage_frames)
   local player = Isaac.GetPlayer(0)
   local enemy = entity.ToNPC()
-  if enemy ~= nil and damage ~= 0 and damage_source.ToPlayer() == player then --preliminary check
+  if enemy ~= nil and damage ~= 0 and damage_source.Entity:ToPlayer() == player then --preliminary check
     if bitand(damageflag, DamageFlag.DAMAGE_TIMER) ~= DamageFlag.DAMAGE_TIMER then --flag check to ensure no recursion
       if (math.random() < base_crit_chance) or (player:HasCollectible(ol_lopper_id) and (enemy.HitPoints / enemy.MaxHitPoints) < .1) then
         entity:TakeDamage(damage, DamageFlag.DAMAGE_TIMER, player, 0) --deal double crit damage
