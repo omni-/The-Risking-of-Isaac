@@ -1,2 +1,3 @@
 <items gfxroot="gfx/items/" version="1">
+	<passive cache="damage" name="Ol' Lopper" description="Damage up + Execute your enemies!" gfx="ol_lopper.png"/>
 </items>
