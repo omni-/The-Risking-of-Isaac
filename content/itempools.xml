@@ -1,0 +1,28 @@
+<ItemPools>
+	<Pool Name="treasure">
+		<!-- rare -->
+		<Item name="Ol' Lopper" Weight="0.5" DecreaseBy="1" RemoveOn="0.1"/>
+		<Item name="Heaven Cracker" Weight="0.5" DecreaseBy="1" RemoveOn="0.1"/>
+		<Item name="Tesla Coil" Weight="0.5" DecreaseBy="1" RemoveOn="0.1"/>
+		<Item name="The Hit List" Weight = "0.5" DecreaseBy="1" RemoveOn="0.1"/>
+		<!-- common -->
+		<Item name="Lens-Maker's Glasses" Weight = "1" DecreaseBy="1" RemoveOn="0.1"/>
+	</Pool>
+	<Pool Name="shop">
+		<Item name="Lens-Maker's Glasses" Weight = "1" DecreaseBy="1" RemoveOn="0.1"/>
+	</Pool>
+	<Pool Name="boss">
+		<Item name="Ol' Lopper" Weight="0.1" DecreaseBy="1" RemoveOn="0.1"/>
+		<Item name="Heaven Cracker" Weight="0.1" DecreaseBy="1" RemoveOn="0.1"/>
+		<Item name="Tesla Coil" Weight="0.1" DecreaseBy="1" RemoveOn="0.1"/>
+		<Item name="Lens-Maker's Glasses" Weight = "1" DecreaseBy="1" RemoveOn="0.1"/>
+		<Item name="The Hit List" Weight = "0.5" DecreaseBy="1" RemoveOn="0.1"/>
+	</Pool>
+	<Pool Name="devil">
+		<Item name="The Hit List" Weight = "1" DecreaseBy="1" RemoveOn="0.1"/>
+	</Pool>
+	<Pool Name="greedTreasure">
+	</Pool>
+	<Pool Name="greedShop">
+	</Pool>
+</ItemPools>

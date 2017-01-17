@@ -3,6 +3,8 @@ local mod = RegisterMod("The Risking of Isaac", 1)
 local ol_lopper_id = Isaac.GetItemIdByName("Ol' Lopper")
 local heaven_cracker_id = Isaac.GetItemIdByName("Heaven Cracker")
 local tesla_coil_id = Isaac.GetItemIdByName("Tesla Coil")
+local lm_glasses_id = Isaac.GetItemIdByName("Lens-Maker's Glasses")
+local hit_list_id = Isaac.GetItemIdByName("The Hit List")
 
 local last_collectible_count = 0
 local heaven_cracker_count = 0
@@ -11,10 +13,20 @@ local tear_counter = 0
 local tesla_max_targets = 1
 local tesla_zap_chance = 0.05
 local tesla_max_distance = 120
-local tesla_zap_chance_multiplicator = 1
+local tesla_zap_chance_multiplier = 1
+
+local hit_list_counter = 0
+local hit_list_init_frame_counter = 360
+local hit_list_frame_counter = 240
+local hit_list_entity = nil
+local hit_list_entity_alive = false
+local hit_list_mark_image_path = "./gfx/hit_list_mark.png"
+local hit_list_sprite = Sprite()
+hit_list_sprite:Load(hit_list_mark_image_path, false)
 
 local base_crit_chance = 0.01
-local crit_counter = 0
+local crit_modifier = 0.0
+local crit_multiplier = 1.0
 
 local LaserType = {
 	LASER_BRIMSTONE = 1,
@@ -28,7 +40,7 @@ local LaserType = {
 	LASER_BRIMSTONE_TECH = 9
 }
 
-local text_to_render = "base crit: " .. base_crit_chance .. "//crit counter: " .. crit_counter
+local text_to_render = ""
 
 local function play_sound_at_pos(soundEffect, volume, pos)
     local soundDummy = Isaac.Spawn(EntityType.ENTITY_FLY, 0, 0, pos, Vector(0,0), Isaac.GetPlayer(0));
@@ -53,41 +65,67 @@ end
 function mod:init(player)
   last_collectible_count = player:GetCollectibleCount()
   tesla_max_targets = 1
-  if Game():GetFrameCount() == 1 then
-    Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, ol_lopper_id, Vector(300, 400), Vector(0, 0), nil)
-  end
 end
 
 function mod:cacheUpdate(player, cacheFlag)
-  --player = Isaac.GetPlayer(0)
+  player = Isaac.GetPlayer(0)
+  if cacheFlag == CacheFlag.CACHE_DAMAGE then
+    if player:HasCollectible(ol_lopper_id) then
+      player.Damage = player.Damage + 1
+    end
+    if player:HasCollectible(hit_list_id) then
+      player.Damage = player.Damage + (hit_list_counter * 0.5)
+    end
+  end
+end
+
+function mod:check_hit_list(entity, damage, damageflag, source, frames)
+  local player = Isaac.GetPlayer(0)
+  local enemy = entity:ToNPC()
+  if enemy ~= nil then
+    if enemy.HitPoints - damage <= 0 and entity == hit_list_entity then
+      hit_list_counter = hit_list_counter + 1
+    end
+  end
+end
+
+function mod:get_crit_chance()
+  return (base_crit_chance + crit_modifier) * crit_multiplier
 end
 
 function mod:update()
 	local player = Isaac.GetPlayer(0)
 	local room = Game():GetRoom()
-	
+  
+  --calculate crit chance
+  crit_modifier = 0.06
+  crit_multiplier = 1.0
+  crit_multiplier = crit_multiplier + (player:GetCollectibleNum(lm_glasses_id) * 0.1)
+  
+  --update items
 	if (player:GetCollectibleCount() ~= last_collectible_count) then -- player got an item
 		heaven_cracker_count = math.min(player:GetCollectibleNum(heaven_cracker_id), 4)
 		
 		tesla_max_targets = 1
-		tesla_zap_chance_multiplicator = 1
+		tesla_zap_chance_multiplier = 1
 		if (player:HasCollectible(CollectibleType.COLLECTIBLE_INNER_EYE)) then
-			tesla_zap_chance_multiplicator = tesla_zap_chance_multiplicator * 1.5
+			tesla_zap_chance_multiplier = tesla_zap_chance_multiplier * 1.5
 			tesla_max_targets = tesla_max_targets + 1
 		end
 		if (player:HasCollectible(CollectibleType.COLLECTIBLE_MUTANT_SPIDER)) then
-			tesla_zap_chance_multiplicator = tesla_zap_chance_multiplicator * 2
+			tesla_zap_chance_multiplier = tesla_zap_chance_multiplier * 2
 			tesla_max_targets = tesla_max_targets + 2
 		end
 		if (player:HasCollectible(CollectibleType.COLLECTIBLE_20_20)) then
-			tesla_zap_chance_multiplicator = tesla_zap_chance_multiplicator * 1.25
+			tesla_zap_chance_multiplier = tesla_zap_chance_multiplier * 1.25
 			tesla_max_targets = tesla_max_targets + 1
 		end
 		
 		last_collectible_count = player:GetCollectibleCount()
 	end
 	
-	local fire_tesla = math.random() < (tesla_zap_chance * tesla_zap_chance_multiplicator)
+  --fire tesla
+	local fire_tesla = math.random() < (tesla_zap_chance * tesla_zap_chance_multiplier)
 	local tesla_remaining_targets = tesla_max_targets
 	
 	local entities = Isaac.GetRoomEntities()
@@ -118,24 +156,36 @@ function mod:update()
 			end
 		end
 	end
+  
+  --hit list
+  --[[
+  if  newroom then
+    wait frames
+    assign hitlist enemy
+  end
+  --]]
 end
 
 function mod:check_crit(entity, damage, damageflag, damage_source, damage_frames)
   local player = Isaac.GetPlayer(0)
   local enemy = entity:ToNPC()
-  if enemy ~= nil and damage ~= 0 and damage_source.Entity:ToPlayer() == player then --preliminary check
+  if enemy ~= nil and damage ~= 0 and damage_source.Entity.Parent.Type == EntityType.ENTITY_PLAYER then --preliminary check
     if bitand(damageflag, DamageFlag.DAMAGE_TIMER) ~= DamageFlag.DAMAGE_TIMER then --flag check to ensure no recursion
-      if (math.random() < base_crit_chance) or (player:HasCollectible(ol_lopper_id) and (enemy.HitPoints / enemy.MaxHitPoints) < .9) then
-        entity:TakeDamage(damage, DamageFlag.DAMAGE_TIMER, player, 0) --deal double crit damage
-        crit_counter = crit_counter + 1
+      if math.random() < mod.get_crit_chance() or (player:HasCollectible(ol_lopper_id) and (enemy.HitPoints / enemy.MaxHitPoints) < .9) then
+        entity:TakeDamage(damage, DamageFlag.DAMAGE_TIMER, EntityRef(player), 0) --deal double crit damage
+        enemy:PlaySound(SoundEffect.SOUND_DIMEDROP, 1.0, 0, false, 1.0)
       end
     end
   end
 end
 
 function mod:draw()
-  Isaac.RenderText("id: " .. ol_lopper_id, 5, 220, 255, 255, 255, 100)
+  Isaac.RenderText("crit chance: " .. tostring(mod.get_crit_chance()), 5, 220, 255, 255, 255, 100)
   Isaac.RenderText(text_to_render, 50, 35, 255, 255, 255, 100)
+  
+  if hit_list_entity ~= nil then
+    hit_list_sprite.Render(hit_list_entity.Position, Vector(0, 0), Vector(32, 32))
+  end
 end
 
 mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, mod.cacheUpdate)
@@ -143,3 +193,4 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, mod.update)
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, mod.draw)
 mod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, mod.init)
 mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, mod.check_crit)
+mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, mod.check_hit_list)
