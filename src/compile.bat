@@ -1,0 +1,1 @@
+compile.vbs main.lua ..\main.lua
