@@ -97,7 +97,7 @@ end
 return heaven_cracker
 
 end)() ,
-	tesla_coil = (function()
+  tesla_coil = (function()
 
 local tesla_coil = {}
 
@@ -144,7 +144,7 @@ function tesla_coil:OnUpdate(player, level, room, entities)
 					    laser:SetMaxDistance(distance)
 					    laser:SetColor(Color(0,0,0,255,1,1,1), 10, 0, false, false) -- tint white
 					    laser:SetOneHit(true)
-					    remaining_targets = remaining_targets - 1
+					    remaining_targets = tesla_remaining_targets - 1
 					  end
           end
         else
@@ -217,6 +217,50 @@ function hit_list:OnDraw()
 end
 
 return hit_list
+
+end)() ,
+  lm_glasses = (function()
+
+local lm_glasses = {}
+
+lm_glasses.ID = Isaac.GetItemIdByName("Lens-Maker's Glasses")
+
+return lm_glasses
+
+end)() ,
+  barbed_wire = (function()
+
+local barbed_wire = {}
+barbed_wire.ID = Isaac.GetItemIdByName("Barbed Wire")
+barbed_wire.radius = 5.0
+barbed_wire.last_frame_hit = 0
+barbed_wire.contact = false
+
+function barbed_wire:OnUpdate(player, level, room, entities)
+  for i, #entities do
+    local distance = player.Position:Distance(entities[i].Position, Vector(0, 0)) --NOTE: this is because of an API bug. Param 2 is unused.
+    local frame = room:GetFrameCount()
+    self.contact = false
+    if distance <= radius and frame - self.last_frame_hit < 30 then
+      entities[i]:TakeDamage(player.Damage / 3, 0, EntityRef(player), 0)
+      self.last_frame_hit = frame
+      self.contact = true
+    end
+  end
+end
+
+function barbed_wire:OnItemPickup(player, item)
+  if item == self.ID and player:GetCollectibleCount(self.ID) then
+    self.radius = self.radius * 1.2
+  end
+end
+
+function barbed_wire:OnDraw()
+  local text = "hit"
+  Isaac.RenderText(self.contact ? text : "", 400, 100, 255, 100, 100, 100)
+end
+
+return barbed_wire
 
 end)() 
 }

@@ -1,7 +1,8 @@
 <items gfxroot="gfx/items/" version="1">
 	<passive cache="damage" name="Ol' Lopper" description="Damage up + Execute your enemies!" gfx="ol_lopper.png"/>
-	<passive name="Heaven Cracker" description="Pierce the heavens." gfx="heaven_cracker.png"/>
+	<passive name="Heaven Cracker" description="Pierce the heavens!" gfx="heaven_cracker.png"/>
 	<passive name="Tesla Coil" description="Zzzaaap!" gfx="tesla_coil.png"/>
 	<passive name="Lens-Maker's Glasses" description="Crit up!" gfx="lens_makers_glasses.png"/>
 	<passive name="The Hit List" description="Kill the target and reap the bounty." gfx="the_hit_list.png"/>
+	<passive name="Barbed Wire" description="Hurt nearby enemies" gfx="barbed_wire.png"/>
 </items>

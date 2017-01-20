@@ -16,9 +16,11 @@ local mod_objects =
 {
   gameplay = require("gameplay"),
   heaven_cracker = require("items.heaven_cracker"),
-	tesla_coil = require("items.tesla_coil"),
+  tesla_coil = require("items.tesla_coil"),
   ol_lopper = require("items.ol_lopper"),
-  hit_list = require("items.hit_list")
+  hit_list = require("items.hit_list"),
+  lm_glasses = require("items.lm_glasses"),
+  barbed_wire = require("items.barbed_wire")
 }
 
 local game = Game()
