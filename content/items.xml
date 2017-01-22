@@ -5,4 +5,5 @@
 	<passive name="Lens-Maker's Glasses" description="Crit up!" gfx="lens_makers_glasses.png"/>
 	<passive name="The Hit List" description="Kill the target and reap the bounty." gfx="the_hit_list.png"/>
 	<passive name="Barbed Wire" description="Hurt nearby enemies" gfx="barbed_wire.png"/>
+	<passive name="Predatory Instincts" description="Crits make you cry" gfx="predatory_instincts.png"/>
 </items>

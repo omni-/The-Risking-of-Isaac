@@ -12,15 +12,18 @@ local LaserType = {
 	LASER_BRIMSTONE_TECH = 9
 }
 
+local gameplay = require("gameplay")
+local heaven_cracker = require("items.heaven_cracker")
+local tesla_coil = require("items.tesla_coil")
+local ol_lopper = require("items.ol_lopper")
+local hit_list = require("items.hit_list")
+local lm_glasses = require("items.lm_glasses")
+local barbed_wire = require("items.barbed_wire")
+local predatory_instincts = require("items.predatory_instincts")
+
 local mod_objects =
 {
-  gameplay = require("gameplay"),
-  heaven_cracker = require("items.heaven_cracker"),
-  tesla_coil = require("items.tesla_coil"),
-  ol_lopper = require("items.ol_lopper"),
-  hit_list = require("items.hit_list"),
-  lm_glasses = require("items.lm_glasses"),
-  barbed_wire = require("items.barbed_wire")
+  gameplay, heaven_cracker, tesla_coil, ol_lopper, hit_list, lm_glasses, barbed_wire, predatory_instincts
 }
 
 local game = Game()
@@ -199,12 +202,12 @@ function mod:OnEntityTakeDamage(entity, damage, flags, sourceRef, damage_frames)
     for _, object in pairs(mod_objects) do
         if (object.OnEntityTakeDamage ~= nil) then
             local tmpResult = object:OnEntityTakeDamage(entity, damage, flags, sourceRef, damage_frames)
-            if (tmpResult) then
+            if (tmpResult ~= nil) then
                 result = tmpResult
             end
         end
     end
-    
+	
     return result
 end
 

@@ -12,18 +12,17 @@ local LaserType = {
 	LASER_BRIMSTONE_TECH = 9
 }
 
-local mod_objects =
-{
-  gameplay = (function()
+local gameplay = (function()
 
 local gameplay = {}
 
 local lm_glasses_id = Isaac.GetItemIdByName("Lens-Maker's Glasses")
 local ol_lopper_id = Isaac.GetItemIdByName("Ol' Lopper")
 
-gameplay.base_crit_chance = 0.1
+gameplay.base_crit_chance = 0.8
 gameplay.crit_modifier = 0.0
 gameplay.crit_multiplier = 1.0
+gameplay.on_crit_handler_list = {} -- those are function (EntityPlayer player, Entity entity, float baseDamage, float extra_damage) returns float extra_damage
 
 local function bitand(a, b)
     local result = 0
@@ -49,11 +48,23 @@ function gameplay:OnEntityTakeDamage(entity, damage, damageflag, sourceRef, dama
   if (enemy ~= nil) and (damage ~= 0) and (sourceRef.Entity.Parent ~= nil) and (sourceRef.Entity.Parent.Type == EntityType.ENTITY_PLAYER) then --preliminary check
     if bitand(damageflag, DamageFlag.DAMAGE_TIMER) ~= DamageFlag.DAMAGE_TIMER then --flag check to ensure no recursion
       if math.random() < self:get_crit_chance() or (player:HasCollectible(ol_lopper_id) and (enemy.HitPoints / enemy.MaxHitPoints) < .9) then
-        entity:TakeDamage(damage, DamageFlag.DAMAGE_TIMER, EntityRef(player), 0) --deal double crit damage
+		local extra_damage = damage
+		for i=1, #self.on_crit_handler_list do
+			extra_damage = self.on_crit_handler_list[i].handler(self.on_crit_handler_list[i].target, player, entity, damage, extra_damage)
+			if (extra_damage == nil) then
+				extra_damage = damage
+			end
+		end
+	  
+        entity:TakeDamage(extra_damage, DamageFlag.DAMAGE_TIMER, EntityRef(player), 0) --deal double crit damage
         enemy:PlaySound(SoundEffect.SOUND_DIMEDROP, 1.0, 0, false, 1.0)
       end
     end
   end
+end
+
+function gameplay:RegisterOnCritEventHandler(target, handler)
+	table.insert(self.on_crit_handler_list, { target = target, handler = handler })
 end
 
 function gameplay:OnItemPickup(player, item)
@@ -66,8 +77,8 @@ end
 
 return gameplay
 
-end)() ,
-  heaven_cracker = (function()
+end)() 
+local heaven_cracker = (function()
 
 local heaven_cracker = {}
 
@@ -96,8 +107,8 @@ end
 
 return heaven_cracker
 
-end)() ,
-  tesla_coil = (function()
+end)() 
+local tesla_coil = (function()
 
 local tesla_coil = {}
 
@@ -158,8 +169,8 @@ end
 
 return tesla_coil
 
-end)() ,
-  ol_lopper = (function()
+end)() 
+local ol_lopper = (function()
 
 local ol_lopper = {}
 
@@ -175,8 +186,8 @@ end
 
 return ol_lopper
 
-end)() ,
-  hit_list = (function()
+end)() 
+local hit_list = (function()
 
 local hit_list = {}
 
@@ -218,8 +229,8 @@ end
 
 return hit_list
 
-end)() ,
-  lm_glasses = (function()
+end)() 
+local lm_glasses = (function()
 
 local lm_glasses = {}
 
@@ -227,8 +238,8 @@ lm_glasses.ID = Isaac.GetItemIdByName("Lens-Maker's Glasses")
 
 return lm_glasses
 
-end)() ,
-  barbed_wire = (function()
+end)() 
+local barbed_wire = (function()
 
 local barbed_wire = {}
 barbed_wire.ID = Isaac.GetItemIdByName("Barbed Wire")
@@ -266,6 +277,61 @@ end
 return barbed_wire
 
 end)() 
+local predatory_instincts = (function()
+
+local predatory_instincts = {}
+
+predatory_instincts.ID = Isaac.GetItemIdByName("Predatory Instincts")
+predatory_instincts.tears_up_level = 0
+predatory_instincts.tears_up_max_duration = 3 * 30
+predatory_instincts.tears_up_duration = 0
+
+--local output = ""
+
+function predatory_instincts:OnDraw()
+  --Isaac.RenderText(output, 100, 150, 255, 0, 255, 100)
+end
+
+function predatory_instincts:OnUpdate(player, level, room, entities)
+	if (self.tears_up_duration > 0) then
+		self.tears_up_duration = self.tears_up_duration - 1
+		output = self.tears_up_level .. ", " .. self.tears_up_duration
+		if (self.tears_up_duration == 0) then
+			self.tears_up_level = 0
+			player:AddCacheFlags(CacheFlag.CACHE_FIREDELAY)
+			player:EvaluateItems()
+		end
+	end
+end
+
+function predatory_instincts:OnEvaluateCache(player, cacheFlag)
+	if cacheFlag == CacheFlag.CACHE_DAMAGE then -- CACHE_FIREDELAY doesn't work. so I'm misusing CACHE_DAMAGE which works for now..
+	  player.MaxFireDelay = player.MaxFireDelay - self.tears_up_level
+	end
+end
+
+function predatory_instincts:OnPlayerCrit(player, entity, base_damage, extra_damage)
+	if player:HasCollectible(self.ID) then
+		self.tears_up_duration = self.tears_up_max_duration
+		if (self.tears_up_level < 3) then
+			self.tears_up_level = self.tears_up_level + 1
+			player:AddCacheFlags(CacheFlag.CACHE_DAMAGE)
+			player:EvaluateItems()
+		end
+	end
+	
+	return extra_damage
+end
+
+gameplay:RegisterOnCritEventHandler(predatory_instincts, predatory_instincts.OnPlayerCrit)
+
+return predatory_instincts
+
+end)() 
+
+local mod_objects =
+{
+  gameplay, heaven_cracker, tesla_coil, ol_lopper, hit_list, lm_glasses, barbed_wire, predatory_instincts
 }
 
 local game = Game()
@@ -444,12 +510,12 @@ function mod:OnEntityTakeDamage(entity, damage, flags, sourceRef, damage_frames)
     for _, object in pairs(mod_objects) do
         if (object.OnEntityTakeDamage ~= nil) then
             local tmpResult = object:OnEntityTakeDamage(entity, damage, flags, sourceRef, damage_frames)
-            if (tmpResult) then
+            if (tmpResult ~= nil) then
                 result = tmpResult
             end
         end
     end
-    
+	
     return result
 end
 
