@@ -3,7 +3,7 @@ local gameplay = {}
 local lm_glasses_id = Isaac.GetItemIdByName("Lens-Maker's Glasses")
 local ol_lopper_id = Isaac.GetItemIdByName("Ol' Lopper")
 
-gameplay.base_crit_chance = 0.71
+gameplay.base_crit_chance = 0.1
 gameplay.crit_modifier = 0.0
 gameplay.crit_multiplier = 1.0
 
