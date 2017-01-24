@@ -19,7 +19,7 @@ local gameplay = {}
 local lm_glasses_id = Isaac.GetItemIdByName("Lens-Maker's Glasses")
 local ol_lopper_id = Isaac.GetItemIdByName("Ol' Lopper")
 
-gameplay.base_crit_chance = 0.8
+gameplay.base_crit_chance = 0.1
 gameplay.crit_modifier = 0.0
 gameplay.crit_multiplier = 1.0
 gameplay.on_crit_handler_list = {} -- those are function (EntityPlayer player, Entity entity, float baseDamage, float extra_damage) returns float extra_damage
@@ -47,15 +47,14 @@ function gameplay:OnEntityTakeDamage(entity, damage, damageflag, sourceRef, dama
   local enemy = entity:ToNPC()
   if (enemy ~= nil) and (damage ~= 0) and (sourceRef.Entity.Parent ~= nil) and (sourceRef.Entity.Parent.Type == EntityType.ENTITY_PLAYER) then --preliminary check
     if bitand(damageflag, DamageFlag.DAMAGE_TIMER) ~= DamageFlag.DAMAGE_TIMER then --flag check to ensure no recursion
-      if math.random() < self:get_crit_chance() or (player:HasCollectible(ol_lopper_id) and (enemy.HitPoints / enemy.MaxHitPoints) < .9) then
-		local extra_damage = damage
-		for i=1, #self.on_crit_handler_list do
-			extra_damage = self.on_crit_handler_list[i].handler(self.on_crit_handler_list[i].target, player, entity, damage, extra_damage)
-			if (extra_damage == nil) then
-				extra_damage = damage
-			end
-		end
-	  
+      if math.random() < self:get_crit_chance() or (player:HasCollectible(ol_lopper_id) and (enemy.HitPoints / enemy.MaxHitPoints) < .1) then
+        local extra_damage = damage
+        for i=1, #self.on_crit_handler_list do
+          extra_damage = self.on_crit_handler_list[i].handler(self.on_crit_handler_list[i].target, player, entity, damage, extra_damage)
+          if (extra_damage == nil) then
+            extra_damage = damage
+          end
+        end
         entity:TakeDamage(extra_damage, DamageFlag.DAMAGE_TIMER, EntityRef(player), 0) --deal double crit damage
         enemy:PlaySound(SoundEffect.SOUND_DIMEDROP, 1.0, 0, false, 1.0)
       end
@@ -68,7 +67,9 @@ function gameplay:RegisterOnCritEventHandler(target, handler)
 end
 
 function gameplay:OnItemPickup(player, item)
-  self.crit_multiplier = self.crit_multiplier + (player:GetCollectibleNum(lm_glasses_id) * 0.1)
+  if item == lm_glasses_id then
+    self.crit_multiplier = self.crit_multiplier + .1
+  end
 end
 
 function gameplay:OnDraw()
@@ -243,7 +244,7 @@ local barbed_wire = (function()
 
 local barbed_wire = {}
 barbed_wire.ID = Isaac.GetItemIdByName("Barbed Wire")
-barbed_wire.radius = 5.0
+barbed_wire.radius = 85.0
 barbed_wire.last_frame_hit = 0
 barbed_wire.contact = false
 
@@ -254,7 +255,7 @@ function barbed_wire:OnUpdate(player, level, room, entities)
       local distance = player.Position:Distance(enemy.Position, player.Position)
       local frame = room:GetFrameCount()
       self.contact = false
-      if distance ~= nil and distance <= self.radius and frame - self.last_frame_hit < 30 then
+      if distance ~= nil and distance <= self.radius and frame - self.last_frame_hit > 15 then
         enemy:TakeDamage(player.Damage / 3, 0, EntityRef(player), 0)
         self.last_frame_hit = frame
         self.contact = true
@@ -269,11 +270,6 @@ function barbed_wire:OnItemPickup(player, item)
   end
 end
 
-function barbed_wire:OnDraw()
-  local text = "hit"
-  Isaac.RenderText(self.contact and text or "", 400, 100, 255, 100, 100, 100)
-end
-
 return barbed_wire
 
 end)() 
@@ -283,19 +279,12 @@ local predatory_instincts = {}
 
 predatory_instincts.ID = Isaac.GetItemIdByName("Predatory Instincts")
 predatory_instincts.tears_up_level = 0
-predatory_instincts.tears_up_max_duration = 3 * 30
+predatory_instincts.tears_up_max_duration = 3 * 30 -- it seems like the game runs at 30 fps ?
 predatory_instincts.tears_up_duration = 0
-
---local output = ""
-
-function predatory_instincts:OnDraw()
-  --Isaac.RenderText(output, 100, 150, 255, 0, 255, 100)
-end
 
 function predatory_instincts:OnUpdate(player, level, room, entities)
 	if (self.tears_up_duration > 0) then
 		self.tears_up_duration = self.tears_up_duration - 1
-		output = self.tears_up_level .. ", " .. self.tears_up_duration
 		if (self.tears_up_duration == 0) then
 			self.tears_up_level = 0
 			player:AddCacheFlags(CacheFlag.CACHE_FIREDELAY)
