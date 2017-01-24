@@ -247,8 +247,10 @@ barbed_wire.ID = Isaac.GetItemIdByName("Barbed Wire")
 barbed_wire.radius = 85.0
 barbed_wire.last_frame_hit = 0
 barbed_wire.contact = false
+barbed_wire.costume = Isaac.GetCostumeIdByPath("gfx/characters/barbed_wire.anm2")
 
 function barbed_wire:OnUpdate(player, level, room, entities)
+  player:AddNullCostume(self.costume)
   for i=1, #entities do
     local enemy = entities[i]:ToNPC()
     if enemy ~= nil and enemy:IsVulnerableEnemy() then
